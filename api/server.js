@@ -3,9 +3,20 @@ const { createClient } = require('@supabase/supabase-js');
 const cors = require('cors');
 const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
+const http = require('http');
+const socketIO = require('socket.io');
 
 const app = express();
 const port = 3000;
+
+// Create HTTP server
+const server = http.createServer(app);
+const io = socketIO(server, {
+  cors: {
+    origin: '*', // Adjust this for production (e.g., your Flutter Web URL)
+    methods: ['GET', 'POST'],
+  },
+});
 
 // Supabase setup
 const supabaseUrl = 'https://ygwvugengpvtjvohtbjr.supabase.co';
@@ -16,6 +27,9 @@ const supabaseService = createClient(supabaseUrl, supabaseServiceKey);
 
 // Secret key for token signing
 const JWT_SECRET = 'YPp/oHPTijtJDWKrZynQWEWvzA+9WzPf0uKQMUa0oH+cacU19kU1TQB/4Y8EStxm9fgBkbyy6FopHRr9NsMMqQ==';
+
+// Store connected users (userId: socketId)
+const connectedUsers = new Map();
 
 app.use(cors());
 app.use(express.json());
@@ -45,6 +59,34 @@ const authenticateUser = async (req, res, next) => {
     return res.status(401).json({ error: 'Unauthorized: Invalid token' });
   }
 };
+
+// Socket.IO connection handler
+io.on('connection', (socket) => {
+  console.log('New client connected:', socket.id);
+
+  // Handle user authentication on connection
+  socket.on('authenticate', (token) => {
+    try {
+      const [headerEncoded, payloadEncoded] = token.split('.');
+      const payload = JSON.parse(Buffer.from(payloadEncoded, 'base64').toString('utf-8'));
+      const userId = payload.sub;
+      connectedUsers.set(userId, socket.id);
+      socket.userId = userId; // Attach userId to socket for easy access
+      console.log(`User ${userId} authenticated with socket ${socket.id}`);
+    } catch (err) {
+      console.log('Authentication error:', err.message);
+      socket.disconnect(true);
+    }
+  });
+
+  // Handle disconnection
+  socket.on('disconnect', () => {
+    if (socket.userId) {
+      connectedUsers.delete(socket.userId);
+      console.log(`User ${socket.userId} disconnected`);
+    }
+  });
+});
 
 // Sign Up endpoint
 app.post('/api/signup', async (req, res) => {
@@ -155,7 +197,7 @@ app.get('/api/users', authenticateUser, async (req, res) => {
   try {
     const { data, error } = await supabaseService
       .from('users')
-      .select('id, name, email, role'); // Removed role-based restriction to show all users
+      .select('id, name, email, role');
 
     if (error) throw error;
 
@@ -405,6 +447,16 @@ app.post('/api/chat', authenticateUser, async (req, res) => {
       .single();
 
     if (error) throw error;
+
+    // Emit real-time event to receiver
+    const receiverSocketId = connectedUsers.get(receiver_id);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit('newMessage', data);
+      console.log(`Emitted new message to ${receiver_id} (socket: ${receiverSocketId})`);
+    } else {
+      console.log(`No active connection for receiver ${receiver_id}`);
+    }
+
     res.status(201).json(data);
   } catch (err) {
     console.error('Error sending message at', new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }), ':', err.message);
@@ -444,6 +496,7 @@ app.get('/api/chat', authenticateUser, async (req, res) => {
   }
 });
 
-app.listen(port, () => {
+// Start the server
+server.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });

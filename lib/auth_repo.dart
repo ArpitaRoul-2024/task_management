@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'model/user_model.dart';
 
 class AuthRepo {
-  final String baseUrl = 'http://localhost:3000/api';
+  final String baseUrl = 'https://task-management-9gaz.onrender.com/api';
 
   Future<Map<String, dynamic>> login(String email, String password) async {
     final response = await http.post(

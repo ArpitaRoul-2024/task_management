@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:task_management/signUp_screen.dart';
-
 import 'auth_cubit.dart';
 import 'auth_state.dart';
 import 'home_screen.dart';
