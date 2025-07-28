@@ -31,5 +31,6 @@
   "bugs": {
     "url": "https://github.com/ArpitaRoul-2024/task_management/issues"
   },
-  "homepage": "https://github.com/ArpitaRoul-2024/task_management#readme"
+  "homepage": "https://github.com/ArpitaRoul-2024/task_management#readme",
+  "devDependencies": {}
 }

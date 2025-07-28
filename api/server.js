@@ -7,13 +7,13 @@ const http = require('http');
 const socketIO = require('socket.io');
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT; // Use only the environment-provided port
 
 // Create HTTP server
 const server = http.createServer(app);
 const io = socketIO(server, {
   cors: {
-    origin: '*', // Adjust this for production (e.g., your Flutter Web URL)
+    origin: 'https://your-flutter-app-domain.com', // Replace with your Flutter app URL
     methods: ['GET', 'POST'],
   },
 });
@@ -52,6 +52,14 @@ const authenticateUser = async (req, res, next) => {
     if (payload.exp && payload.exp < Date.now() / 1000) {
       throw new Error('Token expired');
     }
+    const expectedSignature = crypto
+      .createHmac('sha256', JWT_SECRET)
+      .update(`${headerEncoded}.${payloadEncoded}`)
+      .digest('base64')
+      .replace(/=+$/, '');
+    if (signature !== expectedSignature) {
+      throw new Error('Invalid token signature');
+    }
     req.user = { id: payload.sub, role: payload.role };
     next();
   } catch (err) {
@@ -60,18 +68,23 @@ const authenticateUser = async (req, res, next) => {
   }
 };
 
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('Unhandled error at', new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }), ':', err.message);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
 // Socket.IO connection handler
 io.on('connection', (socket) => {
   console.log('New client connected:', socket.id);
 
-  // Handle user authentication on connection
   socket.on('authenticate', (token) => {
     try {
       const [headerEncoded, payloadEncoded] = token.split('.');
       const payload = JSON.parse(Buffer.from(payloadEncoded, 'base64').toString('utf-8'));
       const userId = payload.sub;
       connectedUsers.set(userId, socket.id);
-      socket.userId = userId; // Attach userId to socket for easy access
+      socket.userId = userId;
       console.log(`User ${userId} authenticated with socket ${socket.id}`);
     } catch (err) {
       console.log('Authentication error:', err.message);
@@ -79,7 +92,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Handle disconnection
   socket.on('disconnect', () => {
     if (socket.userId) {
       connectedUsers.delete(socket.userId);
@@ -111,13 +123,7 @@ app.post('/api/signup', async (req, res) => {
     const userId = uuidv4();
     const { data, error } = await supabaseService
       .from('users')
-      .insert([{
-        id: userId,
-        name,
-        email,
-        password,
-        role: 'User',
-      }])
+      .insert([{ id: userId, name, email, password, role: 'User' }])
       .select()
       .single();
 
@@ -189,6 +195,30 @@ app.post('/api/login', async (req, res) => {
   } catch (err) {
     console.error('Error during login at', new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }), ':', err.message);
     res.status(500).json({ error: 'Failed to login' });
+  }
+});
+
+// Check Auth endpoint for auto-login
+app.get('/api/check-auth', authenticateUser, async (req, res) => {
+  try {
+    const { id, role } = req.user;
+    const { data, error } = await supabaseService
+      .from('users')
+      .select('id, name, email, role')
+      .eq('id', id)
+      .single();
+
+    if (error || !data) {
+      throw new Error('User not found');
+    }
+
+    res.json({
+      token: req.headers.authorization.split(' ')[1],
+      user: { id: data.id, name: data.name, email: data.email, role: data.role },
+    });
+  } catch (err) {
+    console.error('Error checking auth at', new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }), ':', err.message);
+    res.status(401).json({ error: 'Unauthorized: Invalid token' });
   }
 });
 
@@ -274,16 +304,7 @@ app.post('/api/tasks', authenticateUser, async (req, res) => {
   try {
     const { data, error } = await supabaseService
       .from('task')
-      .insert([{
-        id: uuidv4(),
-        title,
-        description,
-        due_date,
-        priority,
-        status,
-        created_by,
-        assigned_to,
-      }])
+      .insert([{ id: uuidv4(), title, description, due_date, priority, status, created_by, assigned_to }])
       .select()
       .single();
 
@@ -317,14 +338,7 @@ app.put('/api/tasks/:id', authenticateUser, async (req, res) => {
 
     const { data, error } = await supabaseService
       .from('task')
-      .update({
-        title,
-        description,
-        due_date,
-        priority,
-        status,
-        assigned_to,
-      })
+      .update({ title, description, due_date, priority, status, assigned_to })
       .eq('id', id)
       .select()
       .single();
@@ -395,12 +409,7 @@ app.post('/api/tasks/:taskId/attachments', authenticateUser, async (req, res) =>
 
     const { data, error } = await supabaseService
       .from('task_attachments')
-      .insert([{
-        id: uuidv4(),
-        task_id: taskId,
-        file_url,
-        file_name,
-      }])
+      .insert([{ id: uuidv4(), task_id: taskId, file_url, file_name }])
       .select()
       .single();
 
@@ -422,7 +431,6 @@ app.post('/api/chat', authenticateUser, async (req, res) => {
   }
 
   try {
-    // Verify receiver exists
     const { data: receiver, error: receiverError } = await supabaseService
       .from('users')
       .select('id')
@@ -435,20 +443,12 @@ app.post('/api/chat', authenticateUser, async (req, res) => {
 
     const { data, error } = await supabaseService
       .from('chat')
-      .insert([{
-        id: uuidv4(),
-        sender_id,
-        receiver_id,
-        message,
-        created_at: new Date().toISOString(),
-        is_read: false,
-      }])
+      .insert([{ id: uuidv4(), sender_id, receiver_id, message, created_at: new Date().toISOString(), is_read: false }])
       .select()
       .single();
 
     if (error) throw error;
 
-    // Emit real-time event to receiver
     const receiverSocketId = connectedUsers.get(receiver_id);
     if (receiverSocketId) {
       io.to(receiverSocketId).emit('newMessage', data);
