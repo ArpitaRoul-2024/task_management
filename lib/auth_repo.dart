@@ -73,14 +73,12 @@ class AuthRepo {
           Uri.parse('$baseUrl/check-auth'),
           headers: {'Authorization': 'Bearer $storedToken'},
         );
-        print('Check-auth response status: ${response.statusCode}, body: ${response.body}');
+        print('Check-auth response status: ${response
+            .statusCode}, body: ${response.body}');
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body) as Map<String, dynamic>;
           final user = AppUser.fromJson(data['user'] as Map<String, dynamic>);
-          return {
-            'token': data['token'],
-            'user': user,
-          };
+          return {'token': data['token'], 'user': user};
         } else {
           print('Invalid token, clearing auth_token');
           await prefs.remove('auth_token');
@@ -93,4 +91,5 @@ class AuthRepo {
       print('Error checking auth: $e');
       return null;
     }
-  }}
+  }
+}
