@@ -35,6 +35,7 @@ class TaskApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           title: 'Task Planner',
           theme: ThemeData(
+            useMaterial3: false,
             primaryColor: const Color(0xFF007AFF),
             scaffoldBackgroundColor: Colors.white,
             appBarTheme: const AppBarTheme(

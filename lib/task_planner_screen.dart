@@ -4,6 +4,7 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:task_management/task_repo.dart';
 
 import 'auth_cubit.dart';
+import 'chat_screen.dart';
 import 'entities/task.dart';
 import 'home_screen.dart';
 
@@ -123,6 +124,7 @@ class _TaskPlannerScreenState extends State<TaskPlannerScreen> {
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
+       backgroundColor: Colors.white,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.schedule), label: 'Schedule'),
@@ -136,10 +138,9 @@ class _TaskPlannerScreenState extends State<TaskPlannerScreen> {
           if (index == 0) {
             Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
           } else if (index == 2) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Chat feature coming soon!')),
-            );
-          }
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const  ChatScreen()));
+
+                }
         },
       ),
     );

@@ -30,11 +30,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text(
-          'Sign Up',
-          style: TextStyle(fontFamily: 'Roboto', fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: const Color(0xFF007AFF),
+         backgroundColor:   Colors.blue[700],
+
       ),
       body: SafeArea(
         child: Padding(
@@ -61,26 +58,38 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: 32),
-                    const Icon(Icons.person_add, size: 80, color: Color(0xFF007AFF)),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Create an Account',
-                      style: TextStyle(
-                        fontFamily: 'Roboto',
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                      textAlign: TextAlign.center,
+                    Image.asset( "assets/Images/logo.png",height:120,width: 120,),
+                     const SizedBox(height: 10),
+                    Row(                      mainAxisAlignment: MainAxisAlignment.center,
+
+                      children: [
+                        const Text(
+                          'Create an',
+                          style: TextStyle(
+                            fontFamily: 'Roboto',
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(width: 6,),
+                        Text( 'Account' , style: TextStyle(
+                          fontFamily: 'Roboto',
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue[700],
+                        ))
+                      ],
                     ),
-                    const SizedBox(height: 8),
+
                     const Text(
-                      'Join Task Planner to manage your tasks',
+                      'Join Task Sync to manage your tasks',
                       style: TextStyle(fontSize: 16, color: Color(0xFF8E8E93)),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 15),
                     TextField(
                       controller: _nameController,
                       decoration: const InputDecoration(
@@ -91,7 +100,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     TextField(
                       controller: _emailController,
                       decoration: const InputDecoration(
@@ -103,7 +112,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ),
                       keyboardType: TextInputType.emailAddress,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     TextField(
                       controller: _passwordController,
                       decoration: const InputDecoration(
@@ -115,7 +124,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ),
                       obscureText: true,
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
                     ElevatedButton(
                       onPressed: state is AuthLoading
                           ? null
@@ -127,7 +136,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF007AFF),
+                        backgroundColor: Colors.blue[700],
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
@@ -148,12 +157,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       onPressed: () {
                         Navigator.pop(context);
                       },
-                      child: const Text(
+                      child: Text(
                         'Already have an account? Sign In',
                         style: TextStyle(
                           fontFamily: 'Roboto',
                           fontSize: 16,
-                          color: Color(0xFF007AFF),
+                          color: Colors.blue[700],
                         ),
                       ),
                     ),

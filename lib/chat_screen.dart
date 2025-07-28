@@ -47,7 +47,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _initializeSocket() {
-    _socket = IO.io('http://localhost:3000', <String, dynamic>{
+    _socket = IO.io('https://task-management-9gaz.onrender.com', <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false,
     });
