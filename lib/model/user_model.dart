@@ -2,33 +2,37 @@ import 'package:equatable/equatable.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class AppUser extends Equatable {
-  final String id; // Can be set to Google user ID
+  final String id; // Matches Supabase users.id (UUID from Google or backend)
   final String email;
-  final String role; // Can be defaulted or fetched from backend
-  final String? name; // Optional, can be set from Google profile
+  final String role; // Can be fetched from backend or defaulted
+  final String? name; // Optional, from Google profile
+  final String? token; // JWT token for Supabase authentication
 
   const AppUser({
     required this.id,
     required this.email,
     required this.role,
     this.name,
+    this.token,
   });
 
   factory AppUser.fromJson(Map<String, dynamic> json) {
     return AppUser(
-      id: json['id'] as String, // Maps to Google user ID from backend response
-      email: json['email'] as String, // Maps to Google email
-      role: json['role'] as String? ?? 'User', // Default to 'User' if not provided
-      name: json['name'] as String?, // Maps to Google display name if available
+      id: json['id'] as String,
+      email: json['email'] as String,
+      role: json['role'] as String? ?? 'User',
+      name: json['name'] as String?,
+      token: json['token'] as String?, // Include token from backend response
     );
   }
 
-  factory AppUser.fromGoogleSignIn(GoogleSignInAccount account) {
+  factory AppUser.fromGoogleSignIn(GoogleSignInAccount account, {String? token}) {
     return AppUser(
-      id: account.id, // Google user ID
-      email: account.email, // Google email
-      role: 'User', // Default role, can be updated by backend after token exchange
-      name: account.displayName, // Google display name
+      id: account.id,
+      email: account.email,
+      role: 'User', // Default role, update via backend
+      name: account.displayName,
+      token: token, // Token from Google Sign-In or Supabase exchange
     );
   }
 
@@ -38,9 +42,10 @@ class AppUser extends Equatable {
       'email': email,
       'role': role,
       'name': name,
+      'token': token,
     };
   }
 
   @override
-  List<Object?> get props => [id, email, role, name];
+  List<Object?> get props => [id, email, role, name, token];
 }

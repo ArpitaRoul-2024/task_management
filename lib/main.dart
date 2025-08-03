@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 import 'package:task_management/task_repo.dart';
+import 'package:task_management/widgets/bottom_navigation.dart';
 
 import 'auth_cubit.dart';
 import 'auth_repo.dart';
@@ -9,9 +10,9 @@ import 'auth_state.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
 
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Ensure Supabase initialization completes before running the app
   await Supabase.initialize(
     url: 'https://ygwvugengpvtjvohtbjr.supabase.co',
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlnd3Z1Z2VuZ3B2dGp2b2h0YmpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDgxOTksImV4cCI6MjA2NzAyNDE5OX0.4g_talCOg-mxC47QT20Z-4wfRicnpb38wBNC6QX3CYM',
@@ -19,8 +20,23 @@ void main() async {
   runApp(const TaskApp());
 }
 
-class TaskApp extends StatelessWidget {
+class TaskApp extends StatefulWidget {
   const TaskApp({super.key});
+
+  @override
+  _TaskAppState createState() => _TaskAppState();
+}
+
+class _TaskAppState extends State<TaskApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Initialize AuthCubit and check auth after the widget is ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authCubit = context.read<AuthCubit>();
+      authCubit.checkAuth();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +46,7 @@ class TaskApp extends StatelessWidget {
         RepositoryProvider(create: (context) => TaskRepo()),
       ],
       child: BlocProvider(
-        create: (context) => AuthCubit(context.read<AuthRepo>())..checkAuth(),
+        create: (context) => AuthCubit(context.read<AuthRepo>()),
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'Task Planner',
@@ -75,7 +91,7 @@ class TaskApp extends StatelessWidget {
                   body: Center(child: CircularProgressIndicator(color: Color(0xFF007AFF))),
                 );
               } else if (state is Authenticated) {
-                return const HomeScreen();
+                return const BottomNavigationWidget();
               } else {
                 return const LoginScreen();
               }

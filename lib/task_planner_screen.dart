@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:table_calendar/table_calendar.dart';
+import 'package:syncfusion_flutter_calendar/calendar.dart';
 import 'package:task_management/task_repo.dart';
 
 import 'auth_cubit.dart';
@@ -16,8 +16,7 @@ class TaskPlannerScreen extends StatefulWidget {
 }
 
 class _TaskPlannerScreenState extends State<TaskPlannerScreen> {
-  DateTime _focusedDay = DateTime.now();
-  DateTime? _selectedDay;
+  DateTime _selectedDay = DateTime.now();
   List<Task> _tasks = [];
   bool isLoading = true;
 
@@ -52,6 +51,31 @@ class _TaskPlannerScreenState extends State<TaskPlannerScreen> {
     }
   }
 
+  List<Appointment> _buildAppointments() {
+    return _tasks.where((task) => task.dueDate != null).map((task) {
+      return Appointment(
+        startTime: task.dueDate!,
+        endTime: task.dueDate!.add(const Duration(hours: 1)),
+        subject: task.title,
+        notes: task.description,
+        color: _getColorForStatus(task.status),
+      );
+    }).toList();
+  }
+
+  Color _getColorForStatus(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'completed':
+        return Colors.greenAccent.shade700;
+      case 'in progress':
+        return Colors.orange.shade700;
+      case 'pending':
+        return Colors.redAccent;
+      default:
+        return Colors.blueGrey.shade600;
+    }
+  }
+
   List<Task> _getTasksForDay(DateTime day) {
     return _tasks.where((task) {
       if (task.dueDate == null) return false;
@@ -64,7 +88,9 @@ class _TaskPlannerScreenState extends State<TaskPlannerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
+        backgroundColor: const Color(0xFF007AFF),
         title: const Text('Task Planner'),
         actions: [
           IconButton(
@@ -77,72 +103,110 @@ class _TaskPlannerScreenState extends State<TaskPlannerScreen> {
           ? const Center(child: CircularProgressIndicator())
           : Column(
         children: [
-          TableCalendar(
-            firstDay: DateTime.utc(2020, 1, 1),
-            lastDay: DateTime.utc(2030, 12, 31),
-            focusedDay: _focusedDay,
-            selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-            onDaySelected: (selectedDay, focusedDay) {
-              setState(() {
-                _selectedDay = selectedDay;
-                _focusedDay = focusedDay;
-              });
-            },
-            eventLoader: _getTasksForDay,
-            calendarStyle: const CalendarStyle(
-              todayDecoration: BoxDecoration(
-                color: Color(0xFF007AFF),
-                shape: BoxShape.circle,
-              ),
-              selectedDecoration: BoxDecoration(
-                color: Color(0xFF8E8E93),
-                shape: BoxShape.circle,
-              ),
+          // CALENDAR
+          Container(
+            margin: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: _selectedDay == null
-                ? const Center(child: Text('Select a date to view tasks'))
-                : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _getTasksForDay(_selectedDay!).length,
-              itemBuilder: (context, index) {
-                final task = _getTasksForDay(_selectedDay!)[index];
-                return Card(
-                  elevation: 4,
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  child: ListTile(
-                    title: Text(task.title),
-                    subtitle: Text(task.description ?? ''),
-                    trailing: Text(task.status ?? 'N/A'),
-                  ),
-                );
+            child: SfCalendar(
+              view: CalendarView.month,
+              dataSource: TaskCalendarDataSource(_buildAppointments()),
+              todayHighlightColor: const Color(0xFF007AFF),
+              backgroundColor: Colors.white,
+              selectionDecoration: BoxDecoration(
+                color: const Color(0xFF007AFF).withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFF007AFF), width: 2),
+              ),
+              monthViewSettings: const MonthViewSettings(
+                showAgenda: false,
+                appointmentDisplayMode: MonthAppointmentDisplayMode.indicator,
+              ),
+              onTap: (CalendarTapDetails details) {
+                if (details.date != null) {
+                  setState(() {
+                    _selectedDay = details.date!;
+                  });
+                }
               },
             ),
           ),
-        ],
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-       backgroundColor: Colors.white,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.schedule), label: 'Schedule'),
-          BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Chat'),
-        ],
-        currentIndex: 1,
-        selectedItemColor: const Color(0xFF007AFF),
-        unselectedItemColor: const Color(0xFF8E8E93),
-        showUnselectedLabels: true,
-        onTap: (index) {
-          if (index == 0) {
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
-          } else if (index == 2) {
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const  ChatScreen()));
 
-                }
-        },
+          const SizedBox(height: 10),
+
+          // TASK LIST
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF5F7FA),
+              ),
+              child: _getTasksForDay(_selectedDay).isEmpty
+                  ? Center(
+                child: Text(
+                  'No tasks on this day',
+                  style: TextStyle(color: Colors.grey.shade600),
+                ),
+              )
+                  : ListView.builder(
+                itemCount: _getTasksForDay(_selectedDay).length,
+                itemBuilder: (context, index) {
+                  final task = _getTasksForDay(_selectedDay)[index];
+                  return Card(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 4,
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.all(12),
+                      title: Text(
+                        task.title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 4),
+                          Text(task.description ?? ''),
+                          const SizedBox(height: 4),
+                          Text(
+                            task.status ?? 'N/A',
+                            style: TextStyle(
+                              color: _getColorForStatus(task.status),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      leading: CircleAvatar(
+                        backgroundColor: _getColorForStatus(task.status).withOpacity(0.8),
+                        child: const Icon(Icons.task_alt, color: Colors.white),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
       ),
-    );
+     );
+  }
+}
+
+class TaskCalendarDataSource extends CalendarDataSource {
+  TaskCalendarDataSource(List<Appointment> appointments) {
+    this.appointments = appointments;
   }
 }

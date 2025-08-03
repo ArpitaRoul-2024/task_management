@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart'; // For call functionality
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:uuid/uuid.dart';
+
+import 'auth_cubit.dart';
 
 class Contact {
+  final String id;
   final String name;
   final String phoneNumber;
 
-  Contact(this.name, this.phoneNumber);
+  Contact(this.id, this.name, this.phoneNumber);
 }
 
 class ContactsScreen extends StatefulWidget {
@@ -16,19 +22,80 @@ class ContactsScreen extends StatefulWidget {
 }
 
 class _ContactsScreenState extends State<ContactsScreen> {
+  final SupabaseClient _supabase = Supabase.instance.client;
   final List<Contact> _contacts = [];
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  bool isLoading = false;
 
-  void _addContact() {
+  @override
+  void initState() {
+    super.initState();
+    _fetchContacts();
+  }
+
+  Future<void> _fetchContacts() async {
+    setState(() => isLoading = true);
+    try {
+      final cubit = context.read<AuthCubit>();
+      final userId = cubit.currentUser?.id ?? '';
+      final response = await _supabase
+          .from('contacts')
+          .select('id, name, phone_no')
+          .eq('id', userId); // Match the user ID as the foreign key
+      if (mounted) {
+        setState(() {
+          _contacts.clear();
+          _contacts.addAll(response.map((json) => Contact(
+            json['id'] as String,
+            json['name'] as String,
+            json['phone_no']?.toString() ?? '',
+          )));
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error fetching contacts: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _addContact() async {
     if (_formKey.currentState!.validate()) {
-      setState(() {
-        _contacts.add(Contact(_nameController.text, _phoneController.text));
-        _nameController.clear();
-        _phoneController.clear();
-      });
-      Navigator.pop(context); // Close the bottom sheet
+      setState(() => isLoading = true);
+      try {
+        final cubit = context.read<AuthCubit>();
+        final userId = cubit.currentUser?.id ?? '';
+        // Debug: Log the token being used
+         final response = await _supabase.from('contacts').insert({
+          'id': userId, // Foreign key to users.id
+          'name': _nameController.text,
+          'phone_no': _phoneController.text,
+        }).maybeSingle(); // Use maybeSingle for single insert
+        if (response != null) {
+          await _fetchContacts(); // Refresh the contact list
+          Navigator.pop(context); // Close the bottom sheet
+        } else {
+          throw Exception('No response from insert');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error adding contact: $e')),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => isLoading = false);
+        }
+      }
     }
   }
 
@@ -78,12 +145,18 @@ class _ContactsScreenState extends State<ContactsScreen> {
               ),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: _addContact,
+                onPressed: isLoading ? null : _addContact,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF007AFF),
                   minimumSize: const Size(double.infinity, 50),
                 ),
-                child: const Text('Add', style: TextStyle(color: Colors.white)),
+                child: isLoading
+                    ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                )
+                    : const Text('Add', style: TextStyle(color: Colors.white)),
               ),
               const SizedBox(height: 16),
             ],
@@ -94,9 +167,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
   }
 
   void _startChat(String phoneNumber) {
-    // Placeholder for chat navigation (integrate with ChatScreen later)
     print('Starting chat with $phoneNumber');
-    // Example: Navigator.push(context, MaterialPageRoute(builder: (_) => ChatScreen(contactId: phoneNumber)));
   }
 
   void _makeCall(String phoneNumber) async {
@@ -114,11 +185,14 @@ class _ContactsScreenState extends State<ContactsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Contacts'),
+        title: const Text('Contacts', style: TextStyle(color: Colors.black87)),
         backgroundColor: Colors.white,
         elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black87),
       ),
-      body: _contacts.isEmpty
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _contacts.isEmpty
           ? const Center(child: Text('No contacts added yet.', style: TextStyle(color: Color(0xFF8E8E93))))
           : ListView.builder(
         padding: const EdgeInsets.all(16),
@@ -151,7 +225,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddContactSheet,
+        onPressed: isLoading ? null : _showAddContactSheet,
         backgroundColor: const Color(0xFF007AFF),
         child: const Icon(Icons.add),
       ),

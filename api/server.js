@@ -13,7 +13,7 @@ const port = process.env.PORT; // Use only the environment-provided port
 const server = http.createServer(app);
 const io = socketIO(server, {
   cors: {
-    origin: 'https://your-flutter-app-domain.com', // Replace with your Flutter app URL
+    origin: 'https://task-management-9gaz.onrender.com', // Replace with your Flutter app URL
     methods: ['GET', 'POST'],
   },
 });
@@ -55,8 +55,7 @@ const authenticateUser = async (req, res, next) => {
     const expectedSignature = crypto
       .createHmac('sha256', JWT_SECRET)
       .update(`${headerEncoded}.${payloadEncoded}`)
-      .digest('base64')
-      .replace(/=+$/, '');
+      .digest('base64');
     if (signature !== expectedSignature) {
       throw new Error('Invalid token signature');
     }
@@ -136,13 +135,12 @@ app.post('/api/signup', async (req, res) => {
       exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
     };
     const header = { alg: 'HS256', typ: 'JWT' };
-    const headerEncoded = Buffer.from(JSON.stringify(header)).toString('base64').replace(/=+$/, '');
-    const payloadEncoded = Buffer.from(JSON.stringify(payload)).toString('base64').replace(/=+$/, '');
+    const headerEncoded = Buffer.from(JSON.stringify(header)).toString('base64');
+    const payloadEncoded = Buffer.from(JSON.stringify(payload)).toString('base64');
     const signature = crypto
       .createHmac('sha256', JWT_SECRET)
       .update(`${headerEncoded}.${payloadEncoded}`)
-      .digest('base64')
-      .replace(/=+$/, '');
+      .digest('base64');
     const token = `${headerEncoded}.${payloadEncoded}.${signature}`;
 
     res.status(201).json({
@@ -182,13 +180,12 @@ app.post('/api/login', async (req, res) => {
       exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
     };
     const header = { alg: 'HS256', typ: 'JWT' };
-    const headerEncoded = Buffer.from(JSON.stringify(header)).toString('base64').replace(/=+$/, '');
-    const payloadEncoded = Buffer.from(JSON.stringify(payload)).toString('base64').replace(/=+$/, '');
+    const headerEncoded = Buffer.from(JSON.stringify(header)).toString('base64');
+    const payloadEncoded = Buffer.from(JSON.stringify(payload)).toString('base64');
     const signature = crypto
       .createHmac('sha256', JWT_SECRET)
       .update(`${headerEncoded}.${payloadEncoded}`)
-      .digest('base64')
-      .replace(/=+$/, '');
+      .digest('base64');
     const token = `${headerEncoded}.${payloadEncoded}.${signature}`;
 
     res.json({ token, user: { id: data.id, name: data.name, email: data.email, role: data.role } });

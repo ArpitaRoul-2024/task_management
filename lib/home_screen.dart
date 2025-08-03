@@ -1,18 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
-import 'package:task_management/assets.dart';
-import 'package:task_management/task_form_screen.dart';
+import 'package:task_management/auth_cubit.dart';
+import 'package:task_management/login_screen.dart';
 import 'package:task_management/task_page.dart';
+import 'package:task_management/directory_page.dart';
 import 'package:task_management/task_planner_screen.dart';
-import 'package:task_management/task_repo.dart';
-import 'directory_page.dart';
-import 'login_screen.dart';
-
-import 'auth_cubit.dart';
-import 'chat_screen.dart';
-import 'entities/task.dart';
-import 'model/user_model.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,13 +14,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  bool isLoading = false; // Initially set to false, update if needed
-
-  @override
-  void initState() {
-    super.initState();
-    // You can load any data if needed
-  }
+  bool isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -49,33 +35,26 @@ class _HomeScreenState extends State<HomeScreen> {
       greeting = 'Good Night';
     }
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          IconButton(
-            onPressed: () async {
-              final cubit = context.read<AuthCubit>();
-              await cubit.signOut();
-              if (mounted) {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                );
-              }
-            },
-            icon: const Icon(Icons.logout_rounded, color: Colors.black),
-          ),
-        ],
-      ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF007AFF)))
-          : SingleChildScrollView(
+    return isLoading
+        ? const Center(child: CircularProgressIndicator(color: Color(0xFF007AFF)))
+        : SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 50.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+
+                IconButton(
+                  icon: const Icon(Icons.logout),
+                  onPressed: () {
+
+                  },
+                ),
+              ],
+            ),
             const SizedBox(height: 8),
             Center(
               child: Column(
@@ -116,10 +95,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       backgroundColor: Colors.tealAccent[100],
                       radius: 25,
                       child: IconButton(
-                        onPressed: () { Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const TaskPage()),
-                        );},
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const TaskPage()),
+                          );
+                        },
                         icon: const Icon(Icons.fact_check_outlined),
                         color: Colors.blueAccent,
                       ),
@@ -134,10 +115,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       backgroundColor: Colors.lightGreenAccent[100],
                       radius: 25,
                       child: IconButton(
-                        onPressed: () { Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const  ContactsScreen()),
-                        );},
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const ContactsScreen()),
+                          );
+                        },
                         icon: const Icon(Icons.contacts_outlined),
                         color: Colors.green,
                       ),
@@ -152,47 +135,25 @@ class _HomeScreenState extends State<HomeScreen> {
                       backgroundColor: Colors.orange[100],
                       radius: 25,
                       child: IconButton(
-                        onPressed: () { Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const  TaskPlannerScreen()),
-                        );},
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const TaskPlannerScreen()),
+                          );
+                        },
                         icon: const Icon(Icons.calendar_month_outlined),
                         color: Colors.red,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text('Schedule', style: TextStyle(fontSize: 15))
+                    const Text('Sch edule', style: TextStyle(fontSize: 15))
                   ],
                 ),
               ],
             ),
             const SizedBox(height: 24),
-            // You can add more widgets here
           ],
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.widgets_outlined), label: 'Assets'),
-          BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline), label: 'Chat'),
-          BottomNavigationBarItem(icon: Icon(Icons.location_history_outlined), label: 'Profile'),
-        ],
-        selectedItemColor: const Color(0xFF007AFF),
-        unselectedItemColor: const Color(0xFF8E8E93),
-        showUnselectedLabels: true,
-
-        currentIndex: 0,
-        onTap: (index) {
-          if (index == 1) {
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const assetsPage()));
-          } else if (index == 2) {
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ChatScreen()));
-          }
-        },
-        backgroundColor: Colors.white,
-        elevation: 8,
       ),
     );
   }
