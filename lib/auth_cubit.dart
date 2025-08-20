@@ -1,10 +1,8 @@
-import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../data/repositaries/auth_repo.dart';
+import 'auth_repo.dart';
 import 'auth_state.dart';
-import '../../data/models/user_model.dart';
-import '../pages/activity.dart'; // Import activity.dart for Activity widget and ActivityManager
+import 'model/user_model.dart';
 
 class AuthCubit extends Cubit<AuthState> {
   final AuthRepo authRepo;
@@ -18,16 +16,13 @@ class AuthCubit extends Cubit<AuthState> {
   String? get token => _token;
   AppUser? get currentUser => _currentUser;
 
+  // Load saved token and check auth state on initialization
   Future<void> _loadSavedAuth() async {
     final prefs = await SharedPreferences.getInstance();
     final savedToken = prefs.getString('auth_token');
-    final userJson = prefs.getString('user_data');
-
-    if (savedToken != null && userJson != null) {
-      final userMap = jsonDecode(userJson) as Map<String, dynamic>;
+    if (savedToken != null) {
       _token = savedToken;
-      _currentUser = AppUser.fromJson(userMap);
-      emit(Authenticated(user: _currentUser!, token: _token!));
+      await checkAuth();
     } else {
       emit(Unauthenticated());
     }
@@ -39,14 +34,9 @@ class AuthCubit extends Cubit<AuthState> {
       final result = await authRepo.login(email, password);
       _token = result['token'];
       _currentUser = result['user'];
-
+      // Save token to SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('auth_token', _token!);
-      await prefs.setString('user_data', jsonEncode(_currentUser!.toJson()));
-
-      // Log the login activity using ActivityManager
-      await ActivityManager.logActivity('User logged in: ${_currentUser!.email}');
-
       emit(Authenticated(user: _currentUser!, token: _token!));
     } catch (e) {
       emit(AuthError(message: 'Login failed: $e'));
@@ -63,14 +53,9 @@ class AuthCubit extends Cubit<AuthState> {
       final result = await authRepo.signUp(name: name, email: email, password: password);
       _token = result['token'];
       _currentUser = result['user'];
-
+      // Save token to SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('auth_token', _token!);
-      await prefs.setString('user_data', jsonEncode(_currentUser!.toJson()));
-
-      // Log the signup activity using ActivityManager
-      await ActivityManager.logActivity('User signed up: ${_currentUser!.email}');
-
       emit(Authenticated(user: _currentUser!, token: _token!));
     } catch (e) {
       emit(AuthError(message: 'Signup failed: $e'));
@@ -78,17 +63,25 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   Future<void> checkAuth() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedToken = prefs.getString('auth_token');
-    final userJson = prefs.getString('user_data');
-
-    if (savedToken != null && userJson != null) {
-      final userMap = jsonDecode(userJson) as Map<String, dynamic>;
-      _token = savedToken;
-      _currentUser = AppUser.fromJson(userMap);
-      emit(Authenticated(user: _currentUser!, token: _token!));
-    } else {
-      emit(Unauthenticated());
+    emit(AuthLoading());
+    print('Checking auth state...');
+    try {
+      final result = await authRepo.checkAuth();
+      if (result != null) {
+        _token = result['token'];
+        _currentUser = result['user'];
+        // Save or update token in SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('auth_token', _token!);
+        print('Auth successful, emitting Authenticated: $_currentUser');
+        emit(Authenticated(user: _currentUser!, token: _token!));
+      } else {
+        print('No valid auth, emitting Unauthenticated');
+        emit(Unauthenticated());
+      }
+    } catch (e) {
+      print('Auth error: $e, emitting AuthError');
+      emit(AuthError(message: 'Error checking authentication: $e'));
     }
   }
 
@@ -97,11 +90,24 @@ class AuthCubit extends Cubit<AuthState> {
     _currentUser = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
-    await prefs.remove('user_data');
-
-    // Log the logout activity using ActivityManager
-    await ActivityManager.logActivity('User logged out');
-
     emit(Unauthenticated());
   }
-}
+
+  // Helper to ensure token is refreshed if needed
+  Future<void> refreshToken() async {
+    if (_token != null) {
+      try {
+        final result = await authRepo.refreshToken(_token!);
+        if (result != null) {
+          _token = result['token'];
+          _currentUser = result['user']; // Update user if provided, can be null
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('auth_token', _token!);
+          emit(Authenticated(user: _currentUser ?? _currentUser!, token: _token!)); // Fallback to existing user if null
+        }
+      } catch (e) {
+        print('Token refresh failed: $e');
+        await signOut();
+      }
+    }
+  }}

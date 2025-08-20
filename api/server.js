@@ -7,27 +7,26 @@ const http = require('http');
 const socketIO = require('socket.io');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT; // Use only the environment-provided port
 
 // Create HTTP server
 const server = http.createServer(app);
 const io = socketIO(server, {
   cors: {
-    origin: ['http://localhost:3000', 'https://task-management-9gaz.onrender.com', 'https://your-flutter-app-url'],
+    origin: 'https://task-management-9gaz.onrender.com', // Replace with your Flutter app URL
     methods: ['GET', 'POST'],
-    credentials: true,
   },
 });
 
 // Supabase setup
 const supabaseUrl = 'https://ygwvugengpvtjvohtbjr.supabase.co';
-const supabaseKey = process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlnd3Z1Z2VuZ3B2dGp2b2h0YmpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDgxOTksImV4cCI6MjA2NzAyNDE5OX0.4g_talCOg-mxC47QT20Z-4wfRicnpb38wBNC6QX3CYM';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlnd3Z1Z2VuZ3B2dGp2b2h0YmpyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MTQ0ODE5OSwiZXhwIjoyMDY3MDI0MTk5fQ.fiC0K1fJVBOFiZ18P3bObx7bGn52IB6VrReP5SaGCG0';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlnd3Z1Z2VuZ3B2dGp2b2h0YmpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDgxOTksImV4cCI6MjA2NzAyNDE5OX0.4g_talCOg-mxC47QT20Z-4wfRicnpb38wBNC6QX3CYM';
+const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlnd3Z1Z2VuZ3B2dGp2b2h0YmpyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MTQ0ODE5OSwiZXhwIjoyMDY3MDI0MTk5fQ.fiC0K1fJVBOFiZ18P3bObx7bGn52IB6VrReP5SaGCG0';
 const supabase = createClient(supabaseUrl, supabaseKey);
 const supabaseService = createClient(supabaseUrl, supabaseServiceKey);
 
 // Secret key for token signing
-const JWT_SECRET = process.env.JWT_SECRET || 'YPp/oHPTijtJDWKrZynQWEWvzA+9WzPf0uKQMUa0oH+cacU19kU1TQB/4Y8EStxm9fgBkbyy6FopHRr9NsMMqQ==';
+const JWT_SECRET = 'YPp/oHPTijtJDWKrZynQWEWvzA+9WzPf0uKQMUa0oH+cacU19kU1TQB/4Y8EStxm9fgBkbyy6FopHRr9NsMMqQ==';
 
 // Store connected users (userId: socketId)
 const connectedUsers = new Map();
@@ -49,15 +48,14 @@ const authenticateUser = async (req, res, next) => {
     if (!headerEncoded || !payloadEncoded || !signature) {
       throw new Error('Invalid token format');
     }
-    const payload = JSON.parse(Buffer.from(payloadEncoded.replace(/=+$/, ''), 'base64').toString('utf-8'));
+    const payload = JSON.parse(Buffer.from(payloadEncoded, 'base64').toString('utf-8'));
     if (payload.exp && payload.exp < Date.now() / 1000) {
       throw new Error('Token expired');
     }
     const expectedSignature = crypto
       .createHmac('sha256', JWT_SECRET)
       .update(`${headerEncoded}.${payloadEncoded}`)
-      .digest('base64')
-      .replace(/=+$/, '');
+      .digest('base64');
     if (signature !== expectedSignature) {
       throw new Error('Invalid token signature');
     }
@@ -72,7 +70,7 @@ const authenticateUser = async (req, res, next) => {
 // Global error handler
 app.use((err, req, res, next) => {
   console.error('Unhandled error at', new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }), ':', err.message);
-  res.status(err.status || 500).json({ error: err.message || 'Internal server error' });
+  res.status(500).json({ error: 'Internal server error' });
 });
 
 // Socket.IO connection handler
@@ -82,14 +80,13 @@ io.on('connection', (socket) => {
   socket.on('authenticate', (token) => {
     try {
       const [headerEncoded, payloadEncoded] = token.split('.');
-      const payload = JSON.parse(Buffer.from(payloadEncoded.replace(/=+$/, ''), 'base64').toString('utf-8'));
+      const payload = JSON.parse(Buffer.from(payloadEncoded, 'base64').toString('utf-8'));
       const userId = payload.sub;
       connectedUsers.set(userId, socket.id);
       socket.userId = userId;
       console.log(`User ${userId} authenticated with socket ${socket.id}`);
     } catch (err) {
       console.log('Authentication error:', err.message);
-      socket.emit('authError', 'Invalid token');
       socket.disconnect(true);
     }
   });
@@ -122,11 +119,10 @@ app.post('/api/signup', async (req, res) => {
       return res.status(400).json({ error: 'Email already exists' });
     }
 
-    const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
     const userId = uuidv4();
     const { data, error } = await supabaseService
       .from('users')
-      .insert([{ id: userId, name, email, password: hashedPassword, role: 'User' }])
+      .insert([{ id: userId, name, email, password, role: 'User' }])
       .select()
       .single();
 
@@ -144,8 +140,7 @@ app.post('/api/signup', async (req, res) => {
     const signature = crypto
       .createHmac('sha256', JWT_SECRET)
       .update(`${headerEncoded}.${payloadEncoded}`)
-      .digest('base64')
-      .replace(/=+$/, '');
+      .digest('base64');
     const token = `${headerEncoded}.${payloadEncoded}.${signature}`;
 
     res.status(201).json({
@@ -167,12 +162,11 @@ app.post('/api/login', async (req, res) => {
   }
 
   try {
-    const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
     const { data, error } = await supabase
       .from('users')
       .select('id, name, email, role')
       .eq('email', email)
-      .eq('password', hashedPassword)
+      .eq('password', password)
       .single();
 
     if (error || !data) {
@@ -191,8 +185,7 @@ app.post('/api/login', async (req, res) => {
     const signature = crypto
       .createHmac('sha256', JWT_SECRET)
       .update(`${headerEncoded}.${payloadEncoded}`)
-      .digest('base64')
-      .replace(/=+$/, '');
+      .digest('base64');
     const token = `${headerEncoded}.${payloadEncoded}.${signature}`;
 
     res.json({ token, user: { id: data.id, name: data.name, email: data.email, role: data.role } });
@@ -269,7 +262,27 @@ app.get('/api/tasks', authenticateUser, async (req, res) => {
 
     if (error) throw error;
 
-    res.json(data || []);
+    const tasksWithUsers = await Promise.all(data.map(async (task) => {
+      if (task.created_by) {
+        const { data: createdByUser } = await supabase
+          .from('users')
+          .select('id, name, email, role')
+          .eq('id', task.created_by)
+          .single();
+        task.created_by = createdByUser || task.created_by;
+      }
+      if (task.assigned_to) {
+        const { data: assignedToUser } = await supabase
+          .from('users')
+          .select('id, name, email, role')
+          .eq('id', task.assigned_to)
+          .single();
+        task.assigned_to = assignedToUser || task.assigned_to;
+      }
+      return task;
+    }));
+
+    res.json(tasksWithUsers || []);
   } catch (err) {
     console.error('Error fetching tasks at', new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }), ':', err.message);
     res.status(500).json({ error: 'Failed to fetch tasks' });
@@ -425,48 +438,20 @@ app.post('/api/chat', authenticateUser, async (req, res) => {
       return res.status(404).json({ error: 'Receiver not found' });
     }
 
-    // Fetch sender's name
-    const { data: sender, error: senderError } = await supabaseService
-      .from('users')
-      .select('name')
-      .eq('id', sender_id)
-      .single();
-
-    if (senderError || !sender) {
-      throw new Error('Sender not found');
-    }
-
-    const messageData = {
-      id: uuidv4(),
-      sender_id,
-      receiver_id,
-      message,
-      created_at: new Date().toISOString(),
-      is_read: false,
-      sender_name: sender.name,
-    };
-
     const { data, error } = await supabaseService
       .from('chat')
-      .insert([messageData])
+      .insert([{ id: uuidv4(), sender_id, receiver_id, message, created_at: new Date().toISOString(), is_read: false }])
       .select()
       .single();
 
     if (error) throw error;
 
-    // Emit to both receiver and sender
     const receiverSocketId = connectedUsers.get(receiver_id);
     if (receiverSocketId) {
       io.to(receiverSocketId).emit('newMessage', data);
       console.log(`Emitted new message to ${receiver_id} (socket: ${receiverSocketId})`);
     } else {
       console.log(`No active connection for receiver ${receiver_id}`);
-    }
-
-    const senderSocketId = connectedUsers.get(sender_id);
-    if (senderSocketId) {
-      io.to(senderSocketId).emit('newMessage', data);
-      console.log(`Emitted new message to ${sender_id} (socket: ${senderSocketId})`);
     }
 
     res.status(201).json(data);
@@ -485,6 +470,7 @@ app.get('/api/chat', authenticateUser, async (req, res) => {
   }
 
   try {
+    console.log(`Fetching chat for sender: ${sender_id}, receiver: ${receiver_id} at ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`);
     const userId = req.user.id;
     if (sender_id !== userId && receiver_id !== userId) {
       return res.status(403).json({ error: 'Forbidden: You can only view your own conversations' });
@@ -492,75 +478,22 @@ app.get('/api/chat', authenticateUser, async (req, res) => {
 
     const { data, error } = await supabaseService
       .from('chat')
-      .select('*, users!chat_sender_id_fkey(name)')
-      .or(`(sender_id.eq.${sender_id},receiver_id.eq.${receiver_id}),(sender_id.eq.${receiver_id},receiver_id.eq.${sender_id})`)
+      .select('*')
+      .or(`sender_id.eq.${sender_id},receiver_id.eq.${sender_id}`)
+      .or(`sender_id.eq.${receiver_id},receiver_id.eq.${receiver_id}`)
       .order('created_at', { ascending: true });
 
     if (error) throw error;
 
-    // Map data to include sender_name
-    const messages = data.map((msg) => ({
-      ...msg,
-      sender_name: msg.users?.name || 'Unknown',
-    }));
-
-    res.json(messages || []);
+    console.log(`Chat data returned: ${JSON.stringify(data)}`);
+    res.json(data || []);
   } catch (err) {
     console.error('Error fetching messages at', new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }), ':', err.message);
     res.status(500).json({ error: 'Failed to fetch messages' });
   }
 });
 
-// Mark messages as read
-app.post('/api/chat/read', authenticateUser, async (req, res) => {
-  const { sender_id, receiver_id } = req.body;
-
-  if (!sender_id || !receiver_id) {
-    return res.status(400).json({ error: 'Sender ID and receiver ID are required' });
-  }
-
-  try {
-    const userId = req.user.id;
-    if (receiver_id !== userId) {
-      return res.status(403).json({ error: 'Forbidden: You can only mark your own messages as read' });
-    }
-
-    const { error } = await supabaseService
-      .from('chat')
-      .update({ is_read: true })
-      .eq('sender_id', sender_id)
-      .eq('receiver_id', receiver_id)
-      .eq('is_read', false);
-
-    if (error) throw error;
-
-    res.status(200).json({ message: 'Messages marked as read' });
-  } catch (err) {
-    console.error('Error marking messages as read at', new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }), ':', err.message);
-    res.status(500).json({ error: 'Failed to mark messages as read' });
-  }
-});
-
-// Fetch unread messages count
-app.get('/api/chat/unread', authenticateUser, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { data, error } = await supabaseService
-      .from('chat')
-      .select('id')
-      .eq('receiver_id', userId)
-      .eq('is_read', false);
-
-    if (error) throw error;
-
-    res.json({ count: data.length });
-  } catch (err) {
-    console.error('Error fetching unread messages at', new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }), ':', err.message);
-    res.status(500).json({ error: 'Failed to fetch unread messages' });
-  }
-});
-
 // Start the server
 server.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+  console.log(`Server running on http://localhost:${port}`);
 });

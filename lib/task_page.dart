@@ -1,12 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:task_management/features/task_Sync/presentation/pages/task_form_screen.dart';
-import 'package:task_management/features/task_Sync/data/repositaries/task_repo.dart';
+import 'package:task_management/task_form_screen.dart';
+import 'package:task_management/task_repo.dart';
 
-import '../cubit/auth_cubit.dart';
- import '../../data/models/user_model.dart';
-import '../../domain/entities/task.dart';
+import 'auth_cubit.dart';
+import 'entities/task.dart';
+import 'model/user_model.dart';
 
 class TaskPage extends StatefulWidget {
   const TaskPage({super.key});
