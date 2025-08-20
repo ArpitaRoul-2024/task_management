@@ -2,11 +2,13 @@ import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:task_management/core/constants/colors.dart';
 
-import '../assets.dart';
-import '../chat_screen.dart';
-import '../home_screen.dart';
-import '../profile.dart';
+import '../pages/assets.dart';
+import '../pages/chat_screen.dart';
+import '../pages/home_screen.dart';
+import '../pages/profile.dart';
+
 
 class BottomNavigationWidget extends StatefulWidget {
   const BottomNavigationWidget({super.key});
@@ -20,9 +22,9 @@ class _BottomNavigationWidgetState extends State<BottomNavigationWidget> {
 
   final List<Widget> _screens = [
     const HomeScreen(),
-    const assetsPage(),
+    const AssetsPage(),
     const ChatScreen(),
-    const profileScreen(),
+    const ProfileScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -48,7 +50,7 @@ class _BottomNavigationWidgetState extends State<BottomNavigationWidget> {
         currentIndex: _currentIndex,
         onTap: _onItemTapped,
         backgroundColor: Colors.white,
-        selectedItemColor: const Color(0xFF007AFF),
+        selectedItemColor:  AppColors.appblue,
         unselectedItemColor: const Color(0xFF8E8E93),
         showUnselectedLabels: true,
         elevation: 8,

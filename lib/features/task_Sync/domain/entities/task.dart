@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 
-import '../model/user_model.dart';
-import '../task_attachment.dart';
+import 'task_attachment.dart';
+import '../../data/models/user_model.dart';
 
 class Task extends Equatable {
   final String id;

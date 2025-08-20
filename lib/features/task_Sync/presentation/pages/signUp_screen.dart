@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'auth_cubit.dart';
-import 'auth_state.dart';
+import '../../../../core/constants/colors.dart';
+import '../cubit/auth_cubit.dart';
+import '../cubit/auth_state.dart';
+import '../widgets/bottom_navigation.dart';
 import 'home_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -30,7 +32,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-         backgroundColor:   Colors.blue[700],
+         backgroundColor:   AppColors.appblue,
 
       ),
       body: SafeArea(
@@ -41,7 +43,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               if (state is Authenticated) {
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (_) => const HomeScreen()),
+                  MaterialPageRoute(builder: (_) =>    BottomNavigationWidget()),
                 );
               } else if (state is AuthError) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -79,7 +81,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           fontFamily: 'Roboto',
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: Colors.blue[700],
+                          color: AppColors.appblue,
                         ))
                       ],
                     ),
@@ -136,7 +138,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue[700],
+                        backgroundColor: AppColors.appblue,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
@@ -162,7 +164,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         style: TextStyle(
                           fontFamily: 'Roboto',
                           fontSize: 16,
-                          color: Colors.blue[700],
+                          color: AppColors.appblue,
                         ),
                       ),
                     ),

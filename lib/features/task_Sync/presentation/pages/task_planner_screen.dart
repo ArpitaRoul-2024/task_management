@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
-import 'package:task_management/task_repo.dart';
+import 'package:task_management/features/task_Sync/data/repositaries/task_repo.dart';
 
-import 'auth_cubit.dart';
+import '../../../../core/constants/colors.dart';
+import '../cubit/auth_cubit.dart';
 import 'chat_screen.dart';
-import 'entities/task.dart';
+ import '../../domain/entities/task.dart';
 import 'home_screen.dart';
 
 class TaskPlannerScreen extends StatefulWidget {
@@ -90,7 +91,7 @@ class _TaskPlannerScreenState extends State<TaskPlannerScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF007AFF),
+        backgroundColor:  AppColors.appblue,
         title: const Text('Task Planner'),
         actions: [
           IconButton(
@@ -120,10 +121,10 @@ class _TaskPlannerScreenState extends State<TaskPlannerScreen> {
             child: SfCalendar(
               view: CalendarView.month,
               dataSource: TaskCalendarDataSource(_buildAppointments()),
-              todayHighlightColor: const Color(0xFF007AFF),
+              todayHighlightColor: AppColors.appblue,
               backgroundColor: Colors.white,
               selectionDecoration: BoxDecoration(
-                color: const Color(0xFF007AFF).withOpacity(0.15),
+                color:   Color(0xFF007AFF).withOpacity(0.15),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: const Color(0xFF007AFF), width: 2),
               ),

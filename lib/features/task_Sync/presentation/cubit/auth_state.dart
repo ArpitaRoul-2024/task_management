@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'model/user_model.dart';
+import '../../data/models/user_model.dart';
 
 /// Abstract base class for authentication states, extending Equatable for value-based equality.
 /// This class provides a foundation for all authentication-related states and ensures
